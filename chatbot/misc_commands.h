@@ -128,7 +128,7 @@ void checkThreshold (RunningCommand *command, void *ctx)
 void optIn (RunningCommand *command, void *ctx)
 {
     ChatBot *bot = ctx;
-    
+     
     Notify **notify = bot->notify = realloc(bot->notify, ++bot->totalNotifications * sizeof(Notify*));
     
     notify[bot->totalNotifications - 1] = createNotification (0, command->message->user->userID);
@@ -142,7 +142,7 @@ void notifyMe (RunningCommand *command, void *ctx)
 {
     ChatBot *bot = ctx;
     
-    Notify **notify = bot->notify;
+    Notify **notify = bot->notify = realloc(bot->notify, ++bot->totalNotifications * sizeof(Notify*));
     
     notify[bot->totalNotifications - 1] = createNotification (1, command->message->user->userID);
     bot->totalNotifications ++;
