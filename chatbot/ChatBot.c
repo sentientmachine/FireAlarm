@@ -73,16 +73,16 @@ void analyzeReports(ChatBot *bot) {
             strcat(falsePositives, body);
         }
     }
-    
+
     //Now, count word frequency.
     Word *words = NULL;
     size_t wordCount = 0;
     unsigned char inWord = 0;
-    
+
     const unsigned maxWordLength = 256;
     char currentWord[maxWordLength];
     size_t currentWordLen = 0;
-    
+
     char *pos = truePositives;
     for (signed char searchingTruePositives = 1; searchingTruePositives > -1; searchingTruePositives--) {
         while (*pos) {
@@ -142,7 +142,7 @@ void analyzeReports(ChatBot *bot) {
     }
     free(truePositives);
     free(falsePositives);
-    
+
     puts("Filter additions:");
     puts("            Word    TP rate      TPs     FPs\n");
     for (unsigned i = 0; i < wordCount; i++) {
@@ -168,14 +168,14 @@ void analyzeReports(ChatBot *bot) {
             }
         }
     }
-    
+
     //Now coming to analyzing the tag filter
     char **tagsCaught;
     int j = 0;
-    trueOccurences = 0;
-    falseOccurences = 0;
-    totalOccurences = 0;
-    
+    unsigned trueOccurences = 0;
+    unsigned falseOccurences = 0;
+    unsigned totalOccurences = 0;
+    int i;
     for (i = 0; i < bot->filterCount; i ++)
     {
         if (bot->filters [i]->type == 3)
@@ -184,7 +184,7 @@ void analyzeReports(ChatBot *bot) {
             j++;
         }
     }
-    
+
     //Now looking for patterns of more bad tags which can be added to the list
     j = 0;
     int k = 0;
@@ -195,24 +195,24 @@ void analyzeReports(ChatBot *bot) {
     int tpRate [50];
     for (i = 0; i < REPORT_MEMORY; i ++)
     {
-        report = reports [i];
-        
+        Report *report = reports [i];
+
         char **postTags = getTagsByID (bot, report->post->postID);
-        
+
         for (j = 0; j < 5; j ++)
         {
             char *currentTag = postTags [i];
-            
+
             if (!isTagProgrammingRelated (currentTag) && !isTagInFilter (bot, currentTag))
             {
                 for (k = 0; k < REPORT_MEMORY; k ++)
                 {
                     Report *currentReport = reports [k];
-                    
+
                     if (currentReport->messageID != report->messageID)
                     {
-                        char **currentPostTags = getTagsByID (bot, currentReport->postID)
-                        
+                        char **currentPostTags = getTagsByID (bot, currentReport->post->postID);
+
                         if (postHasTags (currentReport->post, currentTag))
                         {
                             if (currentReport->confirmation)
@@ -227,7 +227,7 @@ void analyzeReports(ChatBot *bot) {
                     }
                 }
             }
-            
+
             if ((trueOccurences - falseOccurences) >= 15)
             {
                 trueOccurences = 0;
@@ -245,21 +245,20 @@ void analyzeReports(ChatBot *bot) {
             }
         }
     }
-    
+
     Filter **filters = bot->filters;
+    char *desc = malloc (sizeof (char) * 50);
     puts("            Tags    TP rate      TPs     FPs\n");
     for (i = 0; i < totalNewTags; i ++)
     {
-        char *desc = malloc (sizeof (char) * 50);
-        
         sprintf (desc, "[tag:%s]", newTags [i]);
-        
+
         filters = realloc (filters, ++bot->filterCount * sizeof (Filter *));
         filters [bot->filterCount - 1] = createFilter (desc, newTags [i], 3, tps [i], fps [i]);
-        
+
         printf("%16s\t%4f\t%4d\t%4d\n", newTags [i], tpRate [i], tps [i], fps [i]);
     }
-    
+
     free (desc);
     return;
 }
