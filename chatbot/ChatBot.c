@@ -566,10 +566,10 @@ unsigned int checkPost(ChatBot *bot, Post *post) {
     }*/
     
     if (likelihood > THRESHOLD && (recentlyReported (post->postID, bot) == 0)) {
-        const char *notifString = getNotificationString(bot);
+        const char *notifString = getNotificationString(bot, post);
         const size_t maxMessage = strlen(messageBuf) + strlen(post->title) + strlen(notifString) + strlen(REPORT_HEADER) + 256;
         char *message = malloc(maxMessage);
-        char *notif = getNotificationString(bot);
+        char *notif = getNotificationString(bot, post);
         snprintf(message, maxMessage,
                  REPORT_HEADER " (%s): [%s](http://stackoverflow.com/%s/%lu) (likelihood %d) %s",
                  messageBuf, post->title, post->isAnswer ? "a" : "q", post->postID, likelihood, notif);
