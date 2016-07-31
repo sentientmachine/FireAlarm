@@ -92,27 +92,6 @@ void commandList (RunningCommand *command, void *ctx)
     return;
 }
 
-void changeThreshold (RunningCommand *command, void *ctx)
-{
-    ChatBot *bot = ctx;
-
-    long newThreshold = strtol (command->argv [0], NULL, 10);
-
-    if (newThreshold > 10000)
-    {
-        postReply (bot->room, "Please enter a threshold smaller than 10000.", command->message);
-        return;
-    }
-    else if (newThreshold < 100)
-    {
-        postReply (bot->room, "Please enter a threshold bigger than 100.", command->message);
-        return;
-    }
-
-    THRESHOLD = newThreshold;
-    return;
-}
-
 void checkThreshold (RunningCommand *command, void *ctx)
 {
     ChatBot *bot = ctx;
@@ -645,5 +624,105 @@ void apiQuota (RunningCommand *command, void *ctx)
     free (message);
     return;
 }
+
+void modifyFilterThreshold (RunningCommand *command, void *ctx)
+{
+    ChatBot *bot = ctx;
+
+    long newThreshold = strtol (command->argv [0], NULL, 10);
+
+    if (newThreshold > 10000 || newThreshold < 100)
+    {
+        postReply (bot->room, "Please enter a threshold smaller than 10000 and bigger than 100.", command->message);
+        return;
+    }
+
+    long oldThreshold = THRESHOLD;
+    THRESHOLD = newThreshold;
+
+    char *message;
+    asprintf (&message, "The filter threshold has been changed to %ld from %ld.", oldThreshold, THRESHOLD);
+    postReply (bot->room, message, command->message);
+    free (message);
+    return;
+}
+
+void addKeywordToFilter (RunningCommand *command, void *ctx)
+{
+    ChatBot *bot = ctx;
+
+    if (command->argc < 3)
+    {
+        postReply (bot->room, "Expected three arguments.", command->message);
+        return;
+    }
+
+    char *keyword = command->argv [0];
+    int truePositives = (int) strtol (command->argv [1], NULL, 10);
+    int falsePositives = (int) strtol (command->argv [2], NULL, 10);
+
+    if (truePositives < 0 || truePositives > 100 || falsePositves < 0 || falsePositives > 100)
+    {
+        postReply (bot->room, "Please enter values that are only positive and smaller than 100.", command->message);
+        return;
+    }
+
+    Filter **filters = bot->filters;
+
+    filters = realloc (filters, ++bot->filterCount * sizeof (Filter *));
+    filters [bot->filterCount - 1] = createFilter (keyword, keyword, 0, truePositives, falsePositives);
+
+    char *message;
+    asprintf (&message, "Keyword \"%s\" added to the filters.", keyword);
+    postReply (bot->room, message, command->message);
+    free (message);
+    return;
+}
+
+void addTagToFilter (RunningCommand *command, void *ctx)
+{
+    ChatBot *bot = ctx;
+
+    if (command->argc < 3)
+    {
+        postReply (bot->room, "Expected three arguments.", command->message);
+        return;
+    }
+
+    char *tag = command->argv [0];
+    int truePositives = (int) strtol (command->argv [1], NULL, 10);
+    int falsePositives = (int) strtol (command->argv [2], NULL, 10);
+
+    if (truePositives < 0 || truePositives > 100 || falsePositives < 0 || falsePositives > 100)
+    {
+        postReply (bot->room, "Please enter values that are only positive and smaller than 100. ", command->message);
+        return;
+    }
+
+    if (!isValidTag (bot, tag))
+    {
+        char *message;
+        asprintf (&message, "[tag:%s] is not a valid tag.", tag);
+        postReply (bot->room, message, command->message);
+        free (message);
+        return;
+    }
+
+    char *desc;
+    asprintf (&desc, "[tag:%s]", tag);
+
+    Filter **filters = bot->filters;
+
+    filters = realloc (filters, ++bot->filterCount * sizeof (Filter *));
+    filters [bot->filterCount - 1] = createFilter (desc, tag, 3, truePositves, falsePositives);
+    free (desc);
+
+    char *str;
+    asprintf (&str, "Tag \"%s\" added to the filters.", tag);
+    postReply (bot->room, str, command->message);
+    free (str);
+    return;
+}
+
 
 #endif /* misc_commands_h */
