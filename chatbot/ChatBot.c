@@ -671,7 +671,7 @@ unsigned int checkPost(ChatBot *bot, Post *post) {
 void confirmPost(ChatBot *bot, Post *post, unsigned char confirmed) {
     for (int i = 0; i < bot->filterCount; i++) {
         Filter *filter = bot->filters[i];
-        if (postMatchesFilter(post, filter, NULL, NULL)) {
+        if (postMatchesFilter(bot, post, filter, NULL, NULL)) {
             if (confirmed) {
                 filter->truePositives++;
             }
@@ -723,7 +723,7 @@ void testPost (ChatBot *bot, Post *post, RunningCommand *command)
     
     for (int i = 0; i < bot->filterCount; i++) {
         unsigned start, end;
-        if (postMatchesFilter(post, bot->filters[i], &start, &end)) {
+        if (postMatchesFilter(bot, post, bot->filters[i], &start, &end)) {
             
             const char *desc = bot->filters[i]->desc;
             messageBuf = realloc(messageBuf, strlen(messageBuf) + strlen(desc) + 16);
@@ -991,7 +991,7 @@ Filter *getFilterByTag (ChatBot *bot, char *tag)
     
     Filter **filters = bot->filters;
     
-    for (int i = 0; i < bot->totalFilters; i ++)
+    for (int i = 0; i < bot->filterCount; i ++)
     {
         Filter *filter = filters [i];
         
@@ -1009,12 +1009,13 @@ Filter *getFilterByTag (ChatBot *bot, char *tag)
 
 Filter **getTagsCaughtInPost (ChatBot *bot, Post *post)
 {
-    Filter *filters = bot->filters;
+    Filter **filters = bot->filters;
     char **tags = getTagsByID (bot, post->postID);
     char **tagsCaught;
     
     int k = 0;
-    for (int i = 0; i < bot->totalFilters; i ++)
+    int i;
+    for (i = 0; i < bot->totalFilters; i ++)
     {
         Filter *filter = filters [i];
         
@@ -1061,3 +1062,62 @@ void editFilter (ChatBot *bot, Post *post, int confirm)
      
     return;
 }
+
+int isValidTag (ChatBot *bot, char *tag)
+{
+    pthread_mutex_lock(&bot->room->clientLock);
+    CURL *curl = bot->room->client->curl;
+
+    checkCURL(curl_easy_setopt(curl, CURLOPT_HTTPGET, 1));
+    OutBuffer buffer;
+    buffer.data = NULL;
+    checkCURL(curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buffer));
+
+    curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "gzip, deflate");
+
+    unsigned max = 256;
+    char request [max];
+
+    snprintf (request, max,
+              "https://api.stackexchange.com/2.2/tags/%s/info?order=desc&sort=popular&site=stackoverflow&filter=default",
+              tag);
+
+    curl_easy_setopt(curl, CURLOPT_URL, request);
+
+    checkCURL(curl_easy_perform(curl));
+
+    checkCURL(curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, ""));
+
+
+    pthread_mutex_unlock(&bot->room->clientLock);
+
+    cJSON *json = cJSON_Parse(buffer.data);
+
+    free(buffer.data);
+
+    if (!json || cJSON_GetObjectItem(json, "error_id")) {
+        if (json) {
+            cJSON_Delete(json);
+        }
+        puts("Error fetching post!");
+        return 0;
+    }
+
+    cJSON *backoff;
+    if ((backoff = cJSON_GetObjectItem(json, "backoff"))) {
+        char *str;
+        asprintf(&str, "Recieved backoff: %d", backoff->valueint);
+        postMessage(bot->room, str);
+        free(str);
+    }
+
+    cJSON *tagJSON = cJSON_GetArrayItem(cJSON_GetObjectItem(json, "items"), 0);
+    if (tagJSON == NULL) {
+        cJSON_Delete(json);
+        return 0;
+    }
+
+    cJSON_Delete (json);
+    return 1;
+}
+
