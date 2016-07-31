@@ -1015,7 +1015,7 @@ Filter **getTagsCaughtInPost (ChatBot *bot, Post *post)
     
     int k = 0;
     int i;
-    for (i = 0; i < bot->totalFilters; i ++)
+    for (i = 0; i < bot->filterCount; i ++)
     {
         Filter *filter = filters [i];
         
