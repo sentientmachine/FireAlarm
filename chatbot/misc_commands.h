@@ -724,5 +724,173 @@ void addTagToFilter (RunningCommand *command, void *ctx)
     return;
 }
 
+void printTagsInFilter (RunningCommand *command, void *ctx)
+{
+    ChatBot *bot = ctx;
+
+    Filter **filters = bot->filters;
+    char *str = malloc (bot->filterCount * 256);
+
+    sprintf (str,
+             "          Tag           |"
+             "       True Positives   |"
+             "      False Positives   \n"
+             "    ---------------------"
+             "-------------------------"
+             "-------------------------\n");
+
+    for (int i = 0; i < bot->filterCount; i ++)
+    {
+        Filter *filter = filters [i];
+
+        if (filter->type == 3)
+        {
+            sprintf (str + strlen (str),
+                     "         %s             |"
+                     "            %d          |"
+                     "            %d         \n",
+                     filter->filter, filter->truePositives, filter->falsePositives);
+        }
+    }
+
+    postReply (bot->room, "The tags in the current filter are:", command->message);
+    postMessage (bot->room, str);
+    free (str);
+    return;
+}
+
+void printKeywordsInFilter (RunningCommand *command, void *ctx)
+{
+    ChatBot *bot = ctx;
+
+    Filter **filters = bot->filters;
+    char *str = malloc (bot->filterCount * 256);
+
+    sprintf (str,
+             "       Keyword          |"
+             "       True Positives   |"
+             "      False Positives   \n"
+             "    ---------------------"
+             "-------------------------"
+             "-------------------------\n");
+
+    for (int i = 0; i < bot->filterCount; i ++)
+    {
+        Filter *filter = filters [i];
+
+        if (filter->type == 0)
+        {
+            sprintf (str + strlen (str),
+                     "         %s             |"
+                     "            %d          |"
+                     "            %d         \n",
+                     filter->filter, filter->truePositives, filter->falsePositives);
+        }
+    }
+
+    postReply (bot->room, "The keywords in the current filter are:", command->message);
+    postMessage (bot->room, str);
+    free (str);
+    return;
+}
+
+void modifyKeywordFilter (RunningCommand *command, void *ctx)
+{
+    ChatBot *bot = ctx;
+
+    if (command->argc < 4)
+    {
+        postReply (bot->room, "Expected three arguments. **Usage:** `@FireAlarm filter modify keyword <keyword> true=<value> false=<value>`", command->message);
+        return;
+    }
+
+    unsigned changeTruePositive = 1;
+    unsigned changeFalsePositive = 1;
+    int newTruePositive;
+    int oldTruePositive;
+    int newFalsePositive;
+    int oldFalsePositive;
+
+    char *keyword = command->argv [0];
+
+    if (!isKeywordInFilter (bot, keyword))
+    {
+        char *message;
+        asprintf (&message, "Keyword \"%s\" not in the filters.", keyword);
+        postReply (bot->room, message, command->message);
+        free (message);
+        return;
+    }
+
+    char *str = command->argv [1];
+
+    if (str [0] == 't' && str [1] == 'r' && str [2] == 'u' && str [3] == 'e' && str [4] == '=')
+    {
+        str += 5;
+        newTruePositive = (int) strtol (str, NULL, 10);
+        free (str);
+    }
+    else
+    {
+        newTruePositive = (int) strtol (command->argv [0], NULL, 10);
+    }
+
+    if (str [0] == 'f' && str [1] == 'a' && str [2] == 'l' && str [3] == 's' && str [4] == 'e' && str [5] == '=')
+    {
+        str += 6;
+        newFalsePositive = (int) strtol (str, NULL, 10);
+        free (str);
+    }
+    else
+    {
+        newFalsePositive = (int) strtol (command->argv [0], NULL, 10);
+    }
+
+    if (newTruePositive == -1)
+    {
+        changeTruePositive = 0;
+    }
+    if (newFalsePositive == -1)
+    {
+        changeFalsePositive = 0;
+    }
+
+    if (!changeTruePositive && !changeFalsePositive)
+    {
+        postReply (bot->room, "Looks like you do not want to change anything. ", command->message);
+        return;
+    }
+
+    Filter *filter = getFilterByKeyword (bot, keyword);
+    oldFalsePositive = filter->falsePositives;
+
+    if (changeTruePositive)
+    {
+        filter->truePositives = newTruePositive;
+    }
+    if (changeFalsePositive)
+    {
+        filter->falsePositives = newFalsePositive;
+    }
+
+    char *message;
+
+    if (changeTruePositive)
+    {
+        asprintf (&message, "Successfully changed true positives of filter \"%s\" from %d to %d.", keyword, oldTruePositive, newTruePositive);
+    }
+    if (changeFalsePositive)
+    {
+        asprintf (&message, "Successfully changed false positives of filter \"%s\" from %d to %d.", keyword, oldTFalsePositive, newFalsePositive);
+    }
+    if (changeFalsePositive && changeTruePositive)
+    {
+        asprintf (&message, "Successfully change true positives of filter \"%s\" from %d to %d, and false positives from %d to %d.", keyword, oldTruePositive, newTruePositive, oldFalsePositive, newFalsePositive);
+    }
+
+    postReply (bot->room, message, command->message);
+    free (message);
+    return;
+}
 
 #endif /* misc_commands_h */
