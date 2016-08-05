@@ -1121,3 +1121,45 @@ int isValidTag (ChatBot *bot, char *tag)
     return 1;
 }
 
+unsigned isKeywordInFilter (ChatBot *bot, char *keyword)
+{
+    Filter **filters = bot->filters;
+    int i;
+
+    for (i = 0; i < bot->filterCount; i ++)
+    {
+        Filter *filter = filters [i];
+
+        if (filter->type == 0)
+        {
+            if (strcmp (filter->filter, keyword) == 0)
+            {
+                return 1;
+            }
+        }
+    }
+
+    return 0;
+}
+
+Filter *getFilterByKeyword (ChatBot *bot, char *keyword)
+{
+    Filter **filters = bot->filters;
+    int i;
+
+    for (i = 0; i < bot->filterCount; i ++)
+    {
+        Filter *filter = filters [i];
+
+        if (filter->type == 0)
+        {
+            if (strcmp (filter->filter, keyword) == 0)
+            {
+                return filter;
+            }
+        }
+    }
+
+    return NULL;
+}
+
