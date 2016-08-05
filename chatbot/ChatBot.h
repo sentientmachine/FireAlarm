@@ -91,5 +91,8 @@ void editFilter (ChatBot *bot, Post *post, int confirm);
 Filter **getTagsCaughtInPost (ChatBot *bot, Post *post);
 Filter *getFilterByTag (ChatBot *bot, char *tag);
 char **getTagsByID (ChatBot *bot, unsigned long postID);
+unsigned isKeywordInFilter (ChatBot *bot, char *keyword);
+Filter *getFilterByKeyword (ChatBot *bot, char *keyword);
+int isValidTag (ChatBot *bot, char *tag);
 
 #endif /* ChatBot_h */
