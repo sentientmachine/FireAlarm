@@ -736,6 +736,16 @@ int main(int argc, const char * argv[]) {
         createCommand("unclosed tp", 0, printUnclosedTP),
         createCommand("unclosed true", 0, printUnclosedTP),
         createCommand("api quota", 0, apiQuota),
+        createCommand("filter modify threshold *", 2, modifyFilterThreshold),
+        createCommand("filter add keyword *", 2, addKeywordToFilter),
+        createCommand("filter add tag *", 2, addTagToFilter),
+        createCommand("filter view tags", 0, printTagsInFilter),
+        createCommand("filter view keywords", 0, printKeywordsInFilter),
+        createCommand("filter view keyword", 0, printKeywordsInFilter),
+        createCommand("filter modify keyword * * *", 2, modifyKeywordFilter),
+        createCommand("filter info * *", 0, filterInfo),
+        createCommand("filter view accuracy * *", 0, printAccuracyOfFilter),
+        createCommand("filter view reports * ... ...", printReportsByFilter),
         NULL
     };
     ChatBot *bot = createChatBot(room, NULL, commands, loadReports(), filters, users, requests, modes, notify);
