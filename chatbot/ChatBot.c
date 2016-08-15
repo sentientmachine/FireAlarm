@@ -1163,3 +1163,49 @@ Filter *getFilterByKeyword (ChatBot *bot, char *keyword)
     return NULL;
 }
 
+unsigned isTagInFilter (ChatBot *bot, char *tag)
+{
+    Filter **filter = bot->filters;
+    int i;
+
+    for (i = 0; i < bot->filterCount; i ++)
+    {
+        Filter *filter = filters [i];
+
+        if (filter->type == 3)
+        {
+            if (strcmp (filter->filter, tag) == 0)
+            {
+                return 1;
+            }
+        }
+    }
+
+    return 0;
+}
+
+Reports **getReportsByFilter (ChatBot *bot, unsigned filterType, unsigned totalReports)
+{
+    Report **reports = bot->latestReports;
+    Filter **filters = bot->filters;
+    Report **reportsDetected;
+    unsigned i, j, k = 0;
+
+    for (i = 0; i < REPORT_MEMORY; i ++)
+    {
+        Post *post = reports [i]->post;
+
+        for (j = 0; j < bot->filterCount; j ++)
+        {
+            if (postMatchesFilter (bot, post, filters [j], NULL, NULL) && filters [i]->type == filterType)
+            {
+                reportsDetected = realloc (reportsDetected, ++k * sizeof (Report*));
+                reportsDetected [k - 1] = reports [i];
+            }
+        }
+    }
+
+    return reportsDetected;
+}
+
+
