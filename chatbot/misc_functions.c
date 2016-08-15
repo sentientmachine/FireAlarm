@@ -233,3 +233,16 @@ void removeChar (char* str, char c) {
     }
     *pw = '\0';
 }
+
+unsigned isStringCotainingNumbers (char *str)
+{
+    unsigned len = strlen (str);
+
+    for (int i = 0; i < len; i ++)
+    {
+        if (!(str [i] >= '0' && str [i]<= '9'))
+            return 0;
+    }
+
+    return 1;
+}
