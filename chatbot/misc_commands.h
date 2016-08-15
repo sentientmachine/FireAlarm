@@ -230,7 +230,7 @@ void notifyMe (RunningCommand *command, void *ctx)
         free (message);
         return;
     }
-
+    
     Notify **notify = bot->notify = realloc(bot->notify, ++bot->totalNotifications * sizeof(Notify*));
 
     notify[bot->totalNotifications - 1] = createNotification (1, command->message->user->userID, arg, -1);
@@ -698,7 +698,6 @@ void addTagToFilter (RunningCommand *command, void *ctx)
         postReply (bot->room, "Please enter values that are only positive and smaller than 100. ", command->message);
         return;
     }
-
     if (!isValidTag (bot, tag))
     {
         char *message;
@@ -890,6 +889,300 @@ void modifyKeywordFilter (RunningCommand *command, void *ctx)
 
     postReply (bot->room, message, command->message);
     free (message);
+    return;
+}
+
+void filterInfo (RunningCommand *command, void *ctx)
+{
+    ChatBot *bot = ctx;
+
+    if (command->argc < 2)
+    {
+        postReply (bot->room, "Expected two arguments.", command->message);
+        return;
+    }
+
+    char *type = command->argv [0];
+    int type = -1;
+
+    if (strcmp (type, "keyword") == )
+    {
+        type = 0;
+    }
+    if (strcmp (type, "tag") == 0)
+    {
+        type = 1;
+    }
+
+    if (type == -1)
+    {
+        char *message;
+        asprintf (&message, "First argument '%s' is invalid. Enter either `keyword` or `tag`.", type);
+        postReply (bot->room, message, command->message);
+        free (message);
+        return;
+    }
+
+    char *argTwo = command->argv [1];
+
+    if (!type)
+    {
+        if (!isKeywordInFilter (bot, argTwo))
+        {
+            char *message;
+            asprintf (&message, "Keyword '%s' is not currently in the list of keyword in the filter.", argTwo);
+            postReply (bot->room, message, command->message);
+            free (message);
+            return;
+        }
+        else if (isKeywordInFilter(bot, argTwo))
+        {
+            Filter *filter = getFilterByKeyword(bot, argTwo);
+            char *message;
+            asprintf (&message, "Keyword '%s' is currently in the filter. It has %d true positives, %d false positives, and its true positive rate is %f.", filter->filter, filter->truePositives, filter->falsePositives, filter->truePositives / (filter->truePositives + filter->falsePositives));
+            postReply (bot->room, message, command->message);
+            free (message);
+            return;
+        }
+    }
+    if (type)
+    {
+        if (!isTagInFilter (bot, argTwo))
+        {
+            char *message;
+            asprintf (&message, "Tag [tag:%s] is not currently in the list of tags in the filter.", argTwo);
+            postReply (bot->room, message, command->message);
+            free (message);
+            return;
+        }
+        else if (isTagInFilter (bot, argTwo))
+        {
+            Filter *filter = getFilterByTag(bot, argTwo);
+            char *message;
+            asprintf (&message, "Tag [tag:%s] is currently in the filter. It has %d true positives, %d false positives, and its true positive rate is %f.", filter->filter, filter->truePositives, filter->falsePositives, filter->truePositives / (filter->truePositives + filter->falsePositives));
+            postReply (bot->room, message, command->message);
+            free (message);
+            return;
+        }
+    }
+
+    return;
+}
+
+void printAccuracyOfFilter (RunningCommand *command, void *ctx)
+{
+    ChatBot *bot = ctx;
+
+    if (command->argc < 1)
+    {
+        postReply (bot->room, "Expected at least 1 argument.", command->message);
+        return;
+    }
+
+    char *type = command->argv [0];
+    int filterType = -1;
+
+    if (strcmp (type, "keyword") == 0)
+    {
+        filterType = 0;
+    }
+    else if (strcmp (type, "tag") == 0)
+    {
+        filterType = 3;
+    }
+    else if (strcmp (type, "body") == 0 || strcmp (type, "length") == 0)
+    {
+        filterType = 2;
+    }
+    else
+    {
+        char *message;
+        asprintf (&message, "'%s' is not a valid first argument. Enter either `keyword` or `tag` or `length`.", type);
+        postReply (bot->room, message, command->message);
+        free (message);
+        return;
+    }
+
+    unsigned totalOccurences;
+    unsigned trueOccurences;
+    unsigned falseOccurences;
+    unsigned i;
+    float accuracy;
+    Filter **filters = bot->filters;
+
+    for (i = 0; i < bot->filterCount; i ++)
+    {
+        Filter *filter = filters [i];
+
+        if (filter->type == filterType)
+        {
+            trueOccurences += filter->truePositives;
+            falseOccurences += filter->falsePositives;
+        }
+    }
+
+    totalOccurences = trueOccurences + falseOccurences;
+    accuracy = trueOccurences / totalOccurences;
+
+    char *message;
+    if (!filterType)
+    {
+        asprintf (&message, "The accuracy of the keyword filter is %f, with %u true positives and %u false positives.", accuracy, trueOccurences, falseOccurences);
+    }
+    else if (filterType == 2)
+    {
+        asprintf (&message, "The accuracy of the body length filter is %f, with %u true positives and %u false positives.", accuracy, trueOccurences, falseOccurences);
+    }
+    else if (filterType == 3)
+    {
+        asprintf (&message, "The accuracy of the tag filter is %f, with %u true positives and %u false positives.", accuracy, trueOccurences, falseOccurences);
+    }
+
+    postReply (bot->room, message, command->message):
+    free (message);
+
+    return;
+}
+
+void printReportsByFilter (RunningCommand *command, void *ctx)
+{
+    ChatBot *bot = ctx;
+
+    if (command->argc < 1)
+    {
+        postReply (bot->room, "Expected at least 1 argument.", command->message);
+        return;
+    }
+
+    unsigned printCount = 10;
+    int typeToPrint = -1;
+    unsigned filterType;
+
+    if (command->argc > 1)
+    {
+        if (isStringContainingNumbers (command->argv [1]))
+        {
+            printCount = (unsigned) strtol (command->argv [1], NULL, 10);
+
+            if (printCount < 1 || printCount > 10)
+            {
+                postReply (bot->room, "Please enter a second argument smaller than 11 and bigger than 0.", command->message);
+                return;
+            }
+        }
+        else
+        {
+            if (strcmp (command->argv [1], "true") == 0)
+            {
+                typeToPrint = 1;
+            }
+            else if (strcmp (command->argv [1], "unconfirmed") == 0 || strcmp (command->argv [1], "unknown") == 0)
+            {
+                typeToPrint = 2;
+            }
+            else if (strcmp (command->argv [1], "false") == 0)
+            {
+                typeToPrint = 0;
+            }
+            else
+            {
+                char *message;
+                asprintf (&message, "\"%s\" is not a valid second argument. Enter either `true` or `false` or `unconfirmed`.", command->argv [1]);
+                postReply (bot->room, message, command->message);
+                free (message);
+                return;
+            }
+        }
+    }
+
+    if (strcmp (command->argv [0], "keyword") == 0)
+    {
+        filterType = 0;
+    }
+    else if (strcmp (command->argv [0], "body") == 0 || strcmp (command->argv [0], "length") == 0)
+    {
+        filterType = 2;
+    }
+    else if (strcmp (command->argv [0], "tag") == 0)
+    {
+        filterType = 3;
+    }
+    else
+    {
+        char *message;
+        asprintf (&message, "\"%s\" is not a valid first argument. Enter either `keyword` or `body` or `tag`.", command->argv [0]);
+        postReply (bot->room, message, command->message);
+        free (message);
+        return;
+    }
+
+    char *toPrint = malloc (sizeof (char) * 11 * 256);
+    Report **reports;
+    unsigned i;
+
+    reports = getReportsByFilter (bot, filterType, printCount);
+    char *status;
+
+    for (i = 0; i < printCount; i ++)
+    {
+        Report *report = reports [i];
+
+        if (report == NULL)
+        {
+            break;
+        }
+
+        if (report->confirmation == -1)
+        {
+            asprintf (&status, "Unconfirmed");
+        }
+        else if (report->confirmation == 0)
+        {
+            asprintf (&status, "False Positive");
+        }
+        else if (report->confirmation == 1)
+        {
+            asprintf (&status, "True Positive");
+        }
+
+        if (typeToPrint == -1)
+        {
+            snprintf (toPrint, 255,
+                      "%s: [%s](http://stackoverflow.com/%s/%lu) ([Message %lu](http://chat.stackoverflow.com/transcript/message/%lu#%lu))",
+                      status, report->post->title, report->post->isAnswer ? "a" :"q", report->post->postID, report->messageID, report->messageID, report->messageID);
+        }
+        else
+        {
+            if (typeToPrint == 2 && !strcmp (status, "Unconfirmed"))
+            {
+                snprintf (toPrint, 255,
+                      "%s: [%s](http://stackoverflow.com/%s/%lu) ([Message %lu](http://chat.stackoverflow.com/transcript/message/%lu#%lu))",
+                      status, report->post->title, report->post->isAnswer ? "a" :"q", report->post->postID, report->messageID, report->messageID, report->messageID);
+            }
+            else if (typeToPrint == report->confirmation)
+            {
+                snprintf (toPrint, 255,
+                      "%s: [%s](http://stackoverflow.com/%s/%lu) ([Message %lu](http://chat.stackoverflow.com/transcript/message/%lu#%lu))",
+                      status, report->post->title, report->post->isAnswer ? "a" :"q", report->post->postID, report->messageID, report->messageID, report->messageID);
+            }
+        }
+    }
+
+    free (status);
+
+    char *message;
+
+    if (i < printCount)
+    {
+        printCount = i;
+    }
+
+    asprintf (&message, "%u reports in the %s filter are:", printCount, command->argv [0]);
+    postReply (bot->room, message, command->message);
+    postMessage (bot->room, toPrint);
+    free (message);
+    free (toPrint);
+
     return;
 }
 
