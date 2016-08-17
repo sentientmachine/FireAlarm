@@ -11,6 +11,12 @@
 		"truePositives":	29,
 		"falsePositives":	0
 	}, {
+		"description":	"too much caps",
+		"expression":	"",
+		"type":	4,
+		"truePositives":	20,
+		"falsePositives":	0
+	}, {
 		"description":	"[tag:stack-overflow]",
 		"expression":	"stack-overflow",
 		"type":	3,
