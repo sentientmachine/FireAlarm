@@ -14,3 +14,5 @@ int isTagProgrammingRelated (char *tag);
 int postHasTags (Post *post, char *tag);
 unsigned isTagInFilter (ChatBot *bot, char *tag);
 void removeChar (char* str, char c);
+unsigned isStringCotainingNumbers (char *str);
+unsigned getCapsInString (char *str);
