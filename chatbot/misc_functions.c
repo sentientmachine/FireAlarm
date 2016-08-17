@@ -246,3 +246,18 @@ unsigned isStringCotainingNumbers (char *str)
 
     return 1;
 }
+
+unsigned getCapsInString (char *str)
+{
+    unsigned len = strlen (str);
+    unsigned totalCaps = 0;
+    for (int i = 0; i < len; i ++)
+    {
+        if (str [i] <= 'Z' && str [i] >= 'A')
+        {
+            totalCaps ++;
+        }
+    }
+
+    return totalCaps;
+}
