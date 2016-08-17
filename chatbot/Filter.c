@@ -67,6 +67,17 @@ unsigned char postMatchesFilter(ChatBot *bot, Post *post, Filter *filter, unsign
             return strlen(post->body) < 500;
         case FILTER_TAG:
             return matchTagFilter (bot, post, filter);
+        case FILTER_CAPS:
+            unsigned titleLength = strlen (post->title);
+            unsigned boydLength = strlen (post->body);
+            unsigned totalCaps = 0;
+            totalCaps = getCapsInString (post->title);
+            if ((totalCaps/titleLength) * 100 > 40)
+                return 1;
+            totalCaps = getCapsInString (post->body);
+            if ((totalCaps/bodyLength) * 100 > 30)
+                return 1;
+            return 0;
         default:
             fprintf(stderr, "Invalid filter type %d\n", filter->type);
             exit(EXIT_FAILURE);
