@@ -1186,4 +1186,117 @@ void printReportsByFilter (RunningCommand *command, void *ctx)
     return;
 }
 
+void printFilters (RunningCommand *command, void *ctx)
+{
+    ChatBot *bot = ctx;
+
+    unsigned keywordType = 0;
+    unsigned lengthType = 2;
+    unsigned tagType = 3;
+    unsigned totalFilters = 3;
+    unsigned trueOccurences = 0;
+    unsigned falseOccurences = 0;
+    float accuracy = 0.0;
+    char *str = malloc (sizeof (char) * totalFilters * 500);
+
+    sprintf (str,
+             "        Filter          |"
+             "       Accuracy Rate    |"
+             "       True Positives   |"
+             "      False Positives   \n"
+             "    ---------------------"
+             "-------------------------"
+             "-------------------------"
+             "-------------------------\n");
+
+    Filter **filters = bot->filters;
+
+    for (int i = 0; i < totalFilters; i ++)
+    {
+        if (i == keywordType)
+        {
+            sprintf (str + strlen (str),
+                     "     Keyword Filter     |");
+
+            for (int j = 0; j < bot->filterCount; j ++)
+            {
+                if (filters [j]->type == keywordType)
+                {
+                    trueOccurences += filters [j]->truePositives;
+                    falseOccurences += filters [j]->falsePositives;
+                }
+            }
+
+            accuracy = trueOccurences / (trueOccurences + falseOccurences);
+
+            sprintf (str + strlen (str),
+                     "            %f          |"
+                     "            %u          |"
+                     "            %u          \n",
+                     accuracy, trueOccurences, falseOccurences);
+
+            trueOccurences = 0;
+            falseOccurences = 0;
+            accuracy = 0.0;
+        }
+        else if (i == lengthType)
+        {
+            sprintf (str + strlen (str),
+                     "     Length Filter      |");
+
+            for (int j = 0; j < bot->filterCount; j ++)
+            {
+                if (filters [j]->type == lengthType)
+                {
+                    trueOccurences += filters [j]->truePositives;
+                    falseOccurences += filters [j]->falsePositives;
+                }
+            }
+
+            accuracy = trueOccurences / (trueOccurences + falseOccurences);
+
+            sprintf (str + strlen (str),
+                     "            %f          |"
+                     "            %u          |"
+                     "            %u          \n",
+                     accuracy, trueOccurences, falseOccurences);
+
+            trueOccurences = 0;
+            falseOccurences = 0;
+            accuracy = 0.0;
+        }
+        else if (i == tagType)
+        {
+            sprintf (str + strlen (str),
+                     "     Tag Filter         |");
+
+            for (int j = 0; j < bot->filterCount; j ++)
+            {
+                if (filters [j]->type == tagType)
+                {
+                    trueOccurences += filters [j]->truePositives;
+                    falseOccurences += filters [j]->falsePositives;
+                }
+            }
+
+            accuracy = trueOccurences / (trueOccurences + falseOccurences);
+
+            sprintf (str + strlen (str),
+                     "            %f          |"
+                     "            %u          |"
+                     "            %u          \n",
+                     accuracy, trueOccurences, falseOccurences);
+
+            trueOccurences = 0;
+            falseOccurences = 0;
+            accuracy = 0.0;
+        }
+    }
+
+    postReply (bot->room, "All the filters used by the bot are: ", command->message);
+    postMessage (bot->room, str);
+    free (str);
+    return;
+}
+
 #endif /* misc_commands_h */
