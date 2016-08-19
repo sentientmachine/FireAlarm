@@ -746,6 +746,7 @@ int main(int argc, const char * argv[]) {
         createCommand("filter info * *", 0, filterInfo),
         createCommand("filter view accuracy * *", 0, printAccuracyOfFilter),
         createCommand("filter view reports * ... ...", printReportsByFilter),
+        createCommand("filter view filters", printFilters),
         NULL
     };
     ChatBot *bot = createChatBot(room, NULL, commands, loadReports(), filters, users, requests, modes, notify);
